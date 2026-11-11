@@ -9,6 +9,7 @@ import sqlite3
 import threading
 import time
 import uuid
+from weakref import WeakValueDictionary
 
 from .model import KitError, valid_id
 from .provenance import timestamp_valid
@@ -16,6 +17,53 @@ from .provenance import timestamp_valid
 SEARCH_STOPWORDS = set('a an the to for from and or of in on with this that my your please can could would '
                       'should help me you i it its is are was were be as at by we our using use want need '
                       'does do how what why'.split())
+
+_WRITER_LOCKS = WeakValueDictionary()
+_WRITER_LOCKS_GUARD = threading.Lock()
+
+
+class _LibraryWriterLock:
+    def __init__(self, root):
+        self.root = root
+        self.thread = threading.RLock()
+        self.depth = 0
+        self.connection = None
+
+    def __enter__(self):
+        self.thread.acquire()
+        try:
+            if self.depth == 0:
+                self.root.mkdir(parents=True, exist_ok=True)
+                connection = sqlite3.connect(self.root / '.adeptory-writer.sqlite', timeout=30)
+                try:
+                    connection.execute('BEGIN IMMEDIATE')
+                except BaseException:
+                    connection.close()
+                    raise
+                self.connection = connection
+            self.depth += 1
+            return self
+        except BaseException:
+            self.thread.release()
+            raise
+
+    def __exit__(self, *error):
+        try:
+            self.depth -= 1
+            if self.depth == 0:
+                self.connection.close()
+                self.connection = None
+        finally:
+            self.thread.release()
+
+
+def _writer_lock(root):
+    with _WRITER_LOCKS_GUARD:
+        lock = _WRITER_LOCKS.get(root)
+        if lock is None:
+            lock = _LibraryWriterLock(root)
+            _WRITER_LOCKS[root] = lock
+        return lock
 
 
 def now():
@@ -46,7 +94,7 @@ class KnowledgeLibrary:
     """A library belongs to one Hermes profile; searches stay inside one specialist."""
     def __init__(self, root):
         self.root = Path(root).resolve()
-        self.lock = threading.RLock()
+        self.lock = _writer_lock(self.root)
         self.on_change = None
 
     def fingerprint(self, kit_id):
@@ -97,9 +145,18 @@ class KnowledgeLibrary:
             db.commit()
         finally:
             db.close()
+        affected = set(state['entries']) if rebuild else {
+            entry['id'] for entry in state['entries'].values()
+            if changed == ('entry', entry['id']) or any(
+                ref['document_id'] == changed[1] for ref in entry.get('sources', []))}
+        while True:
+            dependents = {entry['id'] for entry in state['entries'].values()
+                          if any(dep in affected for dep in entry.get('dependencies', []))}
+            if dependents <= affected:
+                break
+            affected.update(dependents)
         for entry in state['entries'].values():
-            if rebuild or changed == ('entry', entry['id']) or any(
-                    ref['document_id'] == changed[1] for ref in entry.get('sources', [])):
+            if entry['id'] in affected:
                 self._write_entry(kit_id, entry['id'], state)
         lines = ['# Specialist library', '', f"Specialist: {kit_id}", '',
                  'Read entries through adeptory_library search/read so source state and conditions travel with the answer.', '',
@@ -362,11 +419,14 @@ class KnowledgeLibrary:
         changed = [ref['document_id'] for ref in item.get('sources', [])
                    if ref['source_sha256'] != state['documents'][ref['document_id']]['sha256']]
         source_states = [self.source_state(source) for source in sources]
+        dependencies = [self._dependency(state, dependency) for dependency in item.get('dependencies', [])]
         return {'id': entry_id, 'title': item['title'], 'content': item['content'],
                 'applicability': item['applicability'], 'exceptions': item.get('exceptions', []),
                 'sources': item.get('sources', []), 'dependencies': item.get('dependencies', []),
                 'source_states': source_states, 'changed_sources': changed,
-                'review_required': bool(changed) or any(s['freshness'] == 'review-due' for s in source_states),
+                'dependencies_context': dependencies,
+                'review_required': bool(changed) or any(s['freshness'] == 'review-due' for s in source_states)
+                                   or any(dependency['review_required'] for dependency in dependencies),
                 'retrieval': 'Use read on this ID for current source states and further dependencies.'}
 
     def search(self, kit_id, query, limit=5):

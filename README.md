@@ -24,9 +24,10 @@ After the Hermes catalog accepts Adeptory, you can also install it by name throu
 Open a new chat in the profile where you installed Adeptory. Send your request with `/adeptory build`.
 
 ```text
-/adeptory build a specialist that checks small CSV files for
-duplicate IDs and missing required values. Explain each finding
-and show how to verify the corrected file.
+/adeptory build a Grant Operations specialist for our community
+arts nonprofit. Research official grant rules, build its own
+searchable library and application-readiness tools, and test it
+on a fictional packet before delivering its Hermes profile.
 ```
 
 You can also describe the job in ordinary conversation and ask Hermes to use Adeptory. Send `/adeptory` for the welcome message.

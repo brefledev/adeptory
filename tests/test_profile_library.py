@@ -183,6 +183,17 @@ class ProfileLibraryTests(unittest.TestCase):
                                       'sources': [], 'inference': True})
         restarted = runtime_class(installed_home / 'plugin-data' / 'adeptory')
         self.assertEqual(restarted.library.status(self.kit)['entries'], 3)
+        revised = restarted.store.load(self.kit)
+        revised.pending_choices.append('Choose the next dataset')
+        revised = restarted.store.save(revised)
+        choices = revised.adoption.choices.copy()
+        restarted = runtime_class(installed_home / 'plugin-data' / 'adeptory')
+        self.assertEqual(restarted.store.load(self.kit).adoption.choices, choices)
+        revised = restarted.store.load(self.kit)
+        revised.goal = 'A different mission requiring a new authorization'
+        restarted.store.save(revised)
+        restarted = runtime_class(installed_home / 'plugin-data' / 'adeptory')
+        self.assertEqual(restarted.store.load(self.kit).adoption.status, 'proposed')
 
     def test_bulk_import_resumes_and_reports_a_blocked_item_without_hiding_progress(self):
         incoming = self.runtime.library.root / 'imports'

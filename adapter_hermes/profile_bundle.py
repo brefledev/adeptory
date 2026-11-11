@@ -72,7 +72,7 @@ def refresh(kit_id, profile_name):
             'scope': 'Public Hermes CLI disable/enable for this generated profile; user adoption and observed task success retain separate evidence.'}
 
 
-def installed(kit_id, profile_name):
+def installed(kit_id, profile_name, expected=None, fingerprint=None):
     profile_name = valid_id(profile_name)
     home = _profile_home(profile_name)
     starter = home / 'plugins' / 'adeptory' / 'starter-kit.json'
@@ -85,6 +85,26 @@ def installed(kit_id, profile_name):
     saved = json.loads(active.read_text(encoding='utf8'))
     if saved.get('adoption', {}).get('origin') != 'verified-user-build-request':
         raise KitError('the installed profile must load the completed, request-authorized specialist')
+    if expected is not None:
+        seed = json.loads(starter.read_text(encoding='utf8'))
+        origin = seed.get('scope', {}).get('import_origin', {})
+        def content(data):
+            data = json.loads(json.dumps(data))
+            data.pop('version', None)
+            data.pop('adoption', None)
+            data.get('scope', {}).pop('import_origin', None)
+            return data
+        if (origin.get('version') != expected.version
+                or content(seed) != content(expected.to_dict())
+                or content(saved) != content(seed)):
+            raise KitError('the installed specialist differs from the current package; prepare and install a refreshed distribution')
+        if fingerprint is not None:
+            try:
+                from ..core.library import KnowledgeLibrary
+            except ImportError:
+                from core.library import KnowledgeLibrary
+            if KnowledgeLibrary(home / 'library').fingerprint(kit_id) != fingerprint:
+                raise KitError('the installed library differs from the current package; refresh the distribution')
     return {'name': profile_name, 'home': str(home), 'library': str(library.parent), 'kit_id': kit_id}
 
 

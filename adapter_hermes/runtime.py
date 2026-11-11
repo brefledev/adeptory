@@ -13,6 +13,7 @@ import shutil
 from . import presentation
 from .conversation import start_reply
 from .construction import Construction
+from .verification import native_task_result
 from .profile_bundle import prepare as prepare_profile, refresh as refresh_profile, installed as installed_profile, complete_delivery
 
 try:
@@ -69,13 +70,14 @@ class Runtime:
                         raise KitError('starter library contains an escaping path')
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(seed, destination)
-            if not self.store._kit_path(data['id']).exists():
+            initial_import = not self.store._kit_path(data['id']).exists()
+            if initial_import:
                 self.builder.propose(data)
             else:
                 current = self.store.load(self.starter_id)
                 self.library.initialize(current.id, current.goal, current.subject)
             authority = starter.with_name('starter-authority.json')
-            if authority.is_file():
+            if initial_import and authority.is_file():
                 approved = json.loads(authority.read_text(encoding='utf8'))
                 if (approved.get('origin') == 'verified-user-build-request'
                         and approved.get('starter_sha256') == hashlib.sha256(starter.read_bytes()).hexdigest()
@@ -166,22 +168,22 @@ class Runtime:
             receipt_id = args.get('data', {}).get('native_receipt_id')
             self.construction.validate_evidence(session_id, {'tasks': [{'evidence': [
                 {'kind': 'host-receipt', 'receipt_id': receipt_id}]}]})
-            delivery = installed_profile(kit.id, args['profile_name'])
+            delivery = installed_profile(kit.id, args['profile_name'], expected=kit,
+                                         fingerprint=self.library.fingerprint(kit.id))
             record = json.loads((self.root / 'build-observations' / (receipt_id + '.json')).read_text(encoding='utf8'))
-            command = str(record.get('args', {}).get('command', ''))
-            if (record['tool'] != 'terminal' or 'hermes' not in command.lower()
-                    or args['profile_name'] not in command or 'chat' not in command):
-                raise KitError('Use the observed terminal receipt for the returned verification_cli command in the generated profile.')
-            output = record['result']
-            if not isinstance(output, dict) or output.get('exit_code', output.get('returncode')) != 0:
-                raise KitError('Wait for the native verification command to finish with exit_code 0; a launched or still-running process is incomplete evidence.')
+            actual = native_task_result(record, args['profile_name'])
+            comparison = dict(args.get('data', {}).get('native_verification') or {})
+            if comparison.get('actual_result') != actual:
+                raise KitError('native_verification.actual_result must retain the exact successful native result text, with independent expected evidence and comparison.')
+            comparison.update(kind='demonstration', actual_receipt_id=receipt_id)
+            self.construction.validate_evidence(session_id, {'tasks': [{'evidence': [comparison]}]})
             tasks = self.builder.plans.read(kit.id)['tasks']
             installation = next(task for task in tasks if task['id'] == 'install-profile')
             installation.update({
                 'status': 'complete', 'blocked_by': [], 'evidence': [{
                     'kind': 'host-receipt', 'receipt_id': receipt_id, 'tool': record['tool'],
                     'result': 'Installed profile and library verified; native task observation ' + receipt_id,
-                    'observed_at': record['observed_at']}]})
+                    'observed_at': record['observed_at']}, comparison]})
             self.builder.plans.update(kit.id, {'tasks': tasks})
             complete_delivery(kit.id, args['profile_name'], self.builder.plans.read(kit.id))
         status = self.builder.status(kit.id)
@@ -833,6 +835,17 @@ def register(ctx):
     }
     text = {"type": "string"}
     strings = {"type": "array", "items": text}
+    fields['adeptory_build']['data']['properties'] = {
+        'native_receipt_id': text,
+        'native_verification': {
+            'type': 'object',
+            'description': 'Independent comparison of the actual generated-profile task; actual_result is the exact final stream result text.',
+            'properties': {**{key: text for key in ('input', 'input_provenance', 'actual_result',
+                'expected_result', 'expected_provenance', 'comparison')},
+                'independent': {'type': 'boolean'}, 'passed': {'type': 'boolean'}},
+            'required': ['input', 'input_provenance', 'actual_result', 'expected_result',
+                         'expected_provenance', 'comparison', 'independent', 'passed'],
+            'additionalProperties': False}}
     def record(properties, required):
         return {"type": "object", "properties": properties, "required": required, "additionalProperties": False}
     claim = record({"id": text, "text": text, "source_ids": strings,
@@ -863,7 +876,7 @@ def register(ctx):
     descriptions = {
         "adeptory_build": "Build a specialist from an ordinary goal. Start then persist outcomes, knowledge requirements, questions and construction tasks with plan; resume with progress. Research authority and instructional material proactively.",
         "adeptory_library": "Build/search this profile's specialist library. document preserves full host-retrieved text with authority, role, dates and license. entry stores authored knowledge with exact source passages, applicability, exceptions and dependencies. search/read return intact entries and source freshness. Read the bundled build skill for the data contract.",
-        "adeptory_propose": "Create a kit with id/goal/subject, or update selected fields with id/current version. Omitted fields stay unchanged. Changed content reopens adoption.",
+        "adeptory_propose": "Create a kit with id/goal/subject, or update selected fields with id/current version. Omitted fields stay unchanged. Original build-request authorization continues within the same mission; changed missions reopen adoption.",
         "adeptory_source": "Record a host-retrieved primary source with evidence and provenance.",
         "adeptory_lookup": "Read package data by kit ID or list available packages.",
         "adeptory_note": "Record an expiring unverified observation with evidence for the mounted subject.",
