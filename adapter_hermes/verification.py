@@ -9,6 +9,21 @@ except ImportError:
     from core.model import KitError
 
 
+def native_profile_name(command):
+    if not isinstance(command, str):
+        return None
+    try:
+        tokens = [part.strip('\"\'') for part in shlex.split(command, posix=False)]
+    except ValueError:
+        return None
+    if tokens and tokens[0] == '&':
+        tokens.pop(0)
+    if (len(tokens) >= 4 and PureWindowsPath(tokens[0]).name.lower() in {'hermes', 'hermes.exe'}
+            and tokens[1] in {'-p', '--profile'} and tokens[3] == 'chat'):
+        return tokens[2]
+    return None
+
+
 def native_task_result(record, profile_name, *, completion=None, profile_home=None, retained_path=None):
     error = 'Run the returned verification_cli directly with --query or --query-file and retain its complete stream-json result.'
     command = record.get('args', {}).get('command')

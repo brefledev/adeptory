@@ -5,6 +5,8 @@ import json
 import uuid
 
 from .native_flow import task_items, force_tool_use, clarify_args, submitted_answer
+from .profile_bundle import installed
+from .verification import native_profile_name
 
 try:
     from ..core.library import atomic_json
@@ -115,10 +117,20 @@ class Construction:
             if tool_call_id and any(item.get('tool_call_id') == tool_call_id for item in pending):
                 return None
             kit = self.builder.store.load(state['building_id'])
+            package_state = {'version': kit.version,
+                             'library_fingerprint': self.builder.library.fingerprint(kit.id)}
+            target = native_profile_name(args.get('command')) if tool_name == 'terminal' else None
+            native_state = None
+            if target is not None and target == state.get('profile_name'):
+                try:
+                    installed(kit.id, target, expected=kit,
+                              fingerprint=package_state['library_fingerprint'])
+                except KitError as exc:
+                    return {'action': 'block', 'message': 'Refresh the generated specialist before its native check: ' + str(exc)}
+                native_state = {'name': target, **package_state}
             pending.append({'tool': tool_name, 'invocation_key': invocation_key(tool_name, args),
                             'tool_call_id': tool_call_id, 'kit_id': kit.id,
-                            'package_state': {'version': kit.version,
-                                              'library_fingerprint': self.builder.library.fingerprint(kit.id)},
+                            'package_state': package_state, 'native_profile_state': native_state,
                             'invoked_at': datetime.now(timezone.utc).isoformat()})
             self.save(session_id)
         return None
@@ -229,6 +241,7 @@ class Construction:
                    'session_id': session_id, 'tool': tool_name,
                    'args': args, 'result': value, 'tool_call_id': tool_call_id, 'status': status,
                    'package_state': captured['package_state'] if captured else None,
+                   'native_profile_state': captured.get('native_profile_state') if captured else None,
                    'invoked_at': captured['invoked_at'] if captured else None,
                    'observed_at': datetime.now(timezone.utc).isoformat()}
         atomic_json(self.root / 'build-observations' / (ident + '.json'), receipt)

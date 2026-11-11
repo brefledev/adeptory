@@ -174,6 +174,8 @@ class Runtime:
             expected_state = {'version': kit.version, 'library_fingerprint': self.library.fingerprint(kit.id)}
             if record.get('package_state') != expected_state:
                 raise KitError('Run a fresh native check after the current package and library revision is installed.')
+            if record.get('native_profile_state') != {'name': args['profile_name'], **expected_state}:
+                raise KitError('The native check must observe the current target profile before it starts; install the current distribution and run a fresh check.')
             completion_id = args.get('data', {}).get('native_completion_receipt_id')
             completion = None
             if completion_id is not None:

@@ -125,6 +125,7 @@ class InstalledRevisionTests(unittest.TestCase):
             'id': 'install-profile', 'description': 'Verify the synthetic installed profile',
             'delivery': True, 'status': 'pending'}]})
         fixture.sync_tasks(self.kit_id)
+        fixture.runtime._session(fixture.session)['profile_name'] = 'synthetic-target'
         record = NativeTaskResultTests().receipt()
         fixture.runtime.pre_tool_call('terminal', record['args'], session_id=fixture.session,
                                       tool_call_id='native-task')
@@ -161,3 +162,14 @@ class InstalledRevisionTests(unittest.TestCase):
             path.write_text(json.dumps(seed), encoding='utf8')
         with self.assertRaisesRegex(KitError, 'fresh native check'):
             self.fixture.runtime._finish_build(current, args, self.fixture.session)
+
+    def test_native_task_cannot_start_against_an_older_installed_profile(self):
+        self.observe_native_task()
+        current = self.fixture.runtime.store.load(self.kit_id)
+        current.workflow[0].instruction += ' Use the new procedure.'
+        self.fixture.runtime.store.save(current)
+        record = NativeTaskResultTests().receipt()
+        blocked = self.fixture.runtime.pre_tool_call('terminal', record['args'],
+            session_id=self.fixture.session, tool_call_id='stale-installed-task')
+        self.assertEqual(blocked['action'], 'block')
+        self.assertIn('Refresh the generated specialist', blocked['message'])
