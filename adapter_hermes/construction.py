@@ -16,7 +16,14 @@ except ImportError:
 
 FIELDS = ('building_id', 'build_active', 'build_turn', 'build_paused', 'build_authorization',
           'native_task_signature', 'finish_requested', 'pending_build_question', 'observed_tools',
-          'profile_name', 'profile_bundle', 'bundle_version', 'host_refusal', 'build_pause_reason')
+          'profile_name', 'profile_bundle', 'bundle_version', 'host_refusal', 'build_pause_reason',
+          'pending_observations')
+
+
+def invocation_key(tool_name, args):
+    value = json.dumps({'tool': tool_name, 'args': args}, sort_keys=True,
+                       ensure_ascii=False, separators=(',', ':'))
+    return hashlib.sha256(value.encode('utf8')).hexdigest()
 
 
 class Construction:
@@ -84,7 +91,7 @@ class Construction:
         return {'args': progress['native_tasks'], 'source': 'adeptory',
                 'reason': 'Display the saved build progress in the native Tasks panel.'}
 
-    def pre_tool(self, tool_name, args, session_id):
+    def pre_tool(self, tool_name, args, session_id, tool_call_id=None):
         state = self.state(session_id)
         if not state.get('build_active') or not state.get('building_id'):
             return None
@@ -103,6 +110,17 @@ class Construction:
             prepared = state['pending_build_question']
             if args != clarify_args(prepared['question'], prepared['choices']):
                 return {'action': 'block', 'message': 'Ask the saved blocking question with its prepared native clarify arguments.'}
+        if tool_name not in {'todo_list', 'clarify', 'adeptory_build', 'tool_describe', 'tool_search'}:
+            pending = state.setdefault('pending_observations', [])
+            if tool_call_id and any(item.get('tool_call_id') == tool_call_id for item in pending):
+                return None
+            kit = self.builder.store.load(state['building_id'])
+            pending.append({'tool': tool_name, 'invocation_key': invocation_key(tool_name, args),
+                            'tool_call_id': tool_call_id, 'kit_id': kit.id,
+                            'package_state': {'version': kit.version,
+                                              'library_fingerprint': self.builder.library.fingerprint(kit.id)},
+                            'invoked_at': datetime.now(timezone.utc).isoformat()})
+            self.save(session_id)
         return None
 
     def question(self, session_id, kit_id, question_id, choices):
@@ -124,6 +142,23 @@ class Construction:
 
     def post_tool(self, tool_name, args, result, session_id, tool_call_id=None, status=None):
         state = self.state(session_id)
+        pending = state.get('pending_observations', [])
+        captured = None
+        match = next((index for index, item in enumerate(pending)
+                      if tool_call_id and item.get('tool_call_id') == tool_call_id
+                      and item['tool'] == tool_name), None)
+        if match is None:
+            key = invocation_key(tool_name, args)
+            candidates = [index for index, item in enumerate(pending)
+                          if item['invocation_key'] == key
+                          and (not tool_call_id or not item.get('tool_call_id'))]
+            if len(candidates) > 1:
+                for index in candidates:
+                    pending[index]['package_state'] = None
+            match = candidates[0] if candidates else None
+        if match is not None:
+            captured = pending.pop(match)
+            self.save(session_id)
         if not state.get('build_active'):
             return
         try:
@@ -190,8 +225,11 @@ class Construction:
         if tool_name in {'adeptory_build', 'tool_describe', 'tool_search'}:
             return
         ident = uuid.uuid4().hex
-        receipt = {'id': ident, 'kit_id': kit_id, 'session_id': session_id, 'tool': tool_name,
+        receipt = {'id': ident, 'kit_id': captured['kit_id'] if captured else kit_id,
+                   'session_id': session_id, 'tool': tool_name,
                    'args': args, 'result': value, 'tool_call_id': tool_call_id, 'status': status,
+                   'package_state': captured['package_state'] if captured else None,
+                   'invoked_at': captured['invoked_at'] if captured else None,
                    'observed_at': datetime.now(timezone.utc).isoformat()}
         atomic_json(self.root / 'build-observations' / (ident + '.json'), receipt)
         state.setdefault('observed_tools', []).append({'receipt_id': ident, 'tool': tool_name,

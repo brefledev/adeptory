@@ -17,9 +17,9 @@ Readiness is a recorded assessment. An observed tool result establishes the oper
 
 A setup plan identifies the specific tool, required version or license, intended records, permitted paths or endpoints, access needs, configuration, and verification. The host governs permissions and credentials.
 
-For a CSV specialist, setup can use an authorized local file reader and a parser. Verification uses a known file and compares duplicate-ID and required-value findings with independent expected rows. The procedure records how blanks, missing columns, repeated IDs, and malformed input affect the result.
+For Grant Operations, setup can combine a source library, an opportunity screener and an application-evidence register. Verification uses a fictional packet and independently specified program criteria. Tests exercise monetary boundaries, missing evidence, expired dates and distinctions between reported facts and verified organizational records.
 
-For an SEO specialist, a crawl export can provide evidence even when a live crawler integration is unavailable. The specialist maps the actual export headers, records the crawl date and configuration, and requests additional evidence when an export cannot establish the needed fact. A proposed connector setup retains its own unverified status until the connection and representative read pass.
+For Drone Shoot Operations, a capability plan can cover jurisdiction-specific research, weather and airspace information, equipment records and a shoot checklist. Each integration records its information source, time, location, coverage and required human decisions. Verification can use a fictional shoot to check missing records, conflicting conditions and the escalation path. Current flight authorization requires its applicable evidence and permissions.
 
 ## Native profile delivery
 

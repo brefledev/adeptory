@@ -171,7 +171,18 @@ class Runtime:
             delivery = installed_profile(kit.id, args['profile_name'], expected=kit,
                                          fingerprint=self.library.fingerprint(kit.id))
             record = json.loads((self.root / 'build-observations' / (receipt_id + '.json')).read_text(encoding='utf8'))
-            actual = native_task_result(record, args['profile_name'])
+            expected_state = {'version': kit.version, 'library_fingerprint': self.library.fingerprint(kit.id)}
+            if record.get('package_state') != expected_state:
+                raise KitError('Run a fresh native check after the current package and library revision is installed.')
+            completion_id = args.get('data', {}).get('native_completion_receipt_id')
+            completion = None
+            if completion_id is not None:
+                self.construction.validate_evidence(session_id, {'tasks': [{'evidence': [
+                    {'kind': 'host-receipt', 'receipt_id': completion_id}]}]})
+                completion = json.loads((self.root / 'build-observations' / (completion_id + '.json')).read_text(encoding='utf8'))
+            transcript = self.root / 'build-observations' / (receipt_id + '-native.jsonl')
+            actual = native_task_result(record, args['profile_name'], completion=completion,
+                                        profile_home=self.profile_home, retained_path=transcript)
             comparison = dict(args.get('data', {}).get('native_verification') or {})
             if comparison.get('actual_result') != actual:
                 raise KitError('native_verification.actual_result must retain the exact successful native result text, with independent expected evidence and comparison.')
@@ -183,7 +194,10 @@ class Runtime:
                 'status': 'complete', 'blocked_by': [], 'evidence': [{
                     'kind': 'host-receipt', 'receipt_id': receipt_id, 'tool': record['tool'],
                     'result': 'Installed profile and library verified; native task observation ' + receipt_id,
-                    'observed_at': record['observed_at']}, comparison]})
+                    'observed_at': record['observed_at'], 'package_state': expected_state,
+                    'native_completion_receipt_id': completion_id,
+                    'transcript': str(transcript),
+                    'transcript_sha256': hashlib.sha256(transcript.read_bytes()).hexdigest()}, comparison]})
             self.builder.plans.update(kit.id, {'tasks': tasks})
             complete_delivery(kit.id, args['profile_name'], self.builder.plans.read(kit.id))
         status = self.builder.status(kit.id)
@@ -731,7 +745,7 @@ class Runtime:
 
     def pre_tool_call(self, tool_name="", args=None, session_id=None, **kwargs):
         if session_id:
-            control = self.construction.pre_tool(tool_name, args or {}, session_id)
+            control = self.construction.pre_tool(tool_name, args or {}, session_id, kwargs.get('tool_call_id'))
             if control:
                 return control
         if not session_id or "kit_id" not in self._session(session_id):
@@ -837,6 +851,7 @@ def register(ctx):
     strings = {"type": "array", "items": text}
     fields['adeptory_build']['data']['properties'] = {
         'native_receipt_id': text,
+        'native_completion_receipt_id': text,
         'native_verification': {
             'type': 'object',
             'description': 'Independent comparison of the actual generated-profile task; actual_result is the exact final stream result text.',

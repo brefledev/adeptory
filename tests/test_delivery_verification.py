@@ -1,6 +1,7 @@
 """Native delivery requires task output from the selected installed revision."""
 import json
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -42,6 +43,46 @@ class NativeTaskResultTests(unittest.TestCase):
         with self.assertRaises(KitError):
             native_task_result(self.receipt(exit_code=1), 'synthetic-target')
 
+    def test_retained_transcript_survives_output_truncation_and_utf16_redirection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            workspace = home / 'workspace'
+            workspace.mkdir()
+            path = workspace / 'native-check.jsonl'
+            answer = 'A' * 72000
+            text = json.dumps({'type': 'tool_result', 'name': 'adeptory_library', 'result': 'read'}) + '\n'
+            text += json.dumps({'type': 'result', 'session_id': 'native-long', 'exit_code': 0, 'text': answer})
+            path.write_text(text, encoding='utf16')
+            record = self.receipt(output='[host output truncated]')
+            record['args']['command'] += ' > "' + str(path) + '"'
+            retained = home / 'observations' / 'native.jsonl'
+            result = native_task_result(record, 'synthetic-target', profile_home=home, retained_path=retained)
+            self.assertEqual(result, answer)
+            self.assertEqual(retained.read_text(encoding='utf8'), text)
+
+    def test_background_check_requires_its_own_successful_completion(self):
+        original = self.receipt(exit_code=None, session_id='proc-native')
+        completion = {'tool': 'process_manage', 'args': {'action': 'wait', 'session_id': 'proc-native'},
+                      'result': {**self.receipt()['result'], 'status': 'exited', 'session_id': 'proc-native'}}
+        self.assertEqual(native_task_result(original, 'synthetic-target', completion=completion),
+                         'The supplied record lacks the required amount.')
+        for change in [{'session_id': 'proc-other'}, {'status': 'running'}, {'exit_code': 1}]:
+            with self.subTest(change=change), self.assertRaises(KitError):
+                altered = {**completion, 'result': {**completion['result'], **change}}
+                native_task_result(original, 'synthetic-target', completion=altered)
+        with self.assertRaises(KitError):
+            native_task_result(original, 'synthetic-target')
+
+    def test_retained_output_cannot_read_outside_builder_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            path = home / 'outside.jsonl'
+            path.write_text(self.receipt()['result']['output'], encoding='utf8')
+            record = self.receipt()
+            record['args']['command'] += ' > "' + str(path) + '"'
+            with self.assertRaisesRegex(KitError, 'builder profile workspace'):
+                native_task_result(record, 'synthetic-target', profile_home=home)
+
 
 class InstalledRevisionTests(unittest.TestCase):
     def setUp(self):
@@ -77,3 +118,46 @@ class InstalledRevisionTests(unittest.TestCase):
             installed(self.kit_id, 'synthetic-target', newer)
         with self.assertRaisesRegex(KitError, 'installed library differs'):
             installed(self.kit_id, 'synthetic-target', self.kit, 'changed-fingerprint')
+
+    def observe_native_task(self):
+        fixture = self.fixture
+        fixture.runtime.builder.plans.update(self.kit_id, {'tasks': [{
+            'id': 'install-profile', 'description': 'Verify the synthetic installed profile',
+            'delivery': True, 'status': 'pending'}]})
+        fixture.sync_tasks(self.kit_id)
+        record = NativeTaskResultTests().receipt()
+        fixture.runtime.pre_tool_call('terminal', record['args'], session_id=fixture.session,
+                                      tool_call_id='native-task')
+        fixture.runtime.post_tool_call('terminal', record['args'], record['result'],
+            session_id=fixture.session, tool_call_id='native-task', status='success')
+        receipt = fixture.runtime._session(fixture.session)['observed_tools'][-1]['receipt_id']
+        actual = native_task_result(record, 'synthetic-target')
+        data = {'native_receipt_id': receipt, 'native_verification': {
+            'input': '{}', 'input_provenance': 'Synthetic empty record.', 'actual_result': actual,
+            'expected_result': 'Report the absent amount.',
+            'expected_provenance': 'Independent synthetic specification requires an amount.',
+            'comparison': 'The final answer identifies the missing amount.',
+            'independent': True, 'passed': True}}
+        return {'operation': 'finish', 'kit_id': self.kit_id, 'profile_name': 'synthetic-target', 'data': data}
+
+    def test_finish_accepts_current_observed_task_and_retains_comparison(self):
+        args = self.observe_native_task()
+        result = self.fixture.runtime._finish_build(self.kit, args, self.fixture.session)
+        self.assertTrue(result['complete'])
+        delivery = self.fixture.runtime.builder.plans.read(self.kit_id)['tasks'][-1]
+        self.assertEqual(delivery['evidence'][-1]['kind'], 'demonstration')
+        self.assertTrue(Path(delivery['evidence'][0]['transcript']).is_file())
+
+    def test_finish_rejects_old_task_even_after_installing_new_content(self):
+        args = self.observe_native_task()
+        current = self.fixture.runtime.store.load(self.kit_id)
+        current.workflow[0].instruction += ' Check the revised procedure.'
+        current = self.fixture.runtime.store.save(current)
+        seed = current.to_dict()
+        seed['version'] = 1
+        seed['scope']['import_origin'] = {'kit_id': self.kit_id, 'version': current.version}
+        for path in [self.home / 'plugins' / 'adeptory' / 'starter-kit.json',
+                     self.home / 'plugin-data' / 'adeptory' / 'kits' / self.kit_id / 'kit.json']:
+            path.write_text(json.dumps(seed), encoding='utf8')
+        with self.assertRaisesRegex(KitError, 'fresh native check'):
+            self.fixture.runtime._finish_build(current, args, self.fixture.session)
