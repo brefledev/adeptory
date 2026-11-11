@@ -129,6 +129,7 @@ class Builder:
 
     def status(self, kit_id):
         kit = self.store.load(kit_id)
+        self.store.sync_capability_roadmap(kit.id)
         gaps = readiness_gaps(kit)
         construction = self.plans.progress(kit.id)
         if not construction['plan']['outcomes']:

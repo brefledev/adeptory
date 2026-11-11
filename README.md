@@ -43,6 +43,8 @@ The original request and construction progress stay in the builder profile. Retu
 
 Each specialist keeps its own `library/` directory. The library contains source captures, authored references, procedures, examples, a navigation index, and a search index. Entries retain their applicability, exceptions, source passages, and review requirements. Search works across acquired sources and authored entries.
 
+The library also keeps a capability roadmap. During later work, the specialist can identify a missing tool or repeated procedure, record its implementation and verification plan, and build an improvement through authorized host tools. It retains the test result before reporting verification. Your original request continues to authorize ordinary work within the same mission. Changes to that mission reopen review.
+
 Read [Library and source records](docs/source-ledger.md) for the evidence fields and freshness rules. Read [Tool setup](docs/tool-setup.md) for capability requirements and verification.
 
 ## Data, permissions, and costs

@@ -117,7 +117,6 @@ def _mechanics(suite: dict[str, Any], artifacts: dict[str, Any]) -> list[dict[st
 
 
 def _runtime_modules():
-    """Load integrated core APIs."""
     from core.kitstore import KitStore, kit_from_dict, validate_kit
     from core.builder import Builder, read_proposal
     from core.select import select_context
@@ -308,7 +307,7 @@ def _case_results(suite: dict[str, Any], artifacts: dict[str, Any]) -> list[dict
 
 
 def run_suite(suite_path: str | Path, mechanics_only: bool = False, **kwargs: Any) -> dict[str, Any]:
-    """Validate suite, inspect supplied artifacts and emit an honest report."""
+    """Validate the suite, inspect supplied artifacts and emit an artifact report."""
     path = Path(suite_path).resolve()
     suite = _load_data(path)
     artifacts = load_artifacts(path)

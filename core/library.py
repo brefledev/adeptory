@@ -112,6 +112,9 @@ class KnowledgeLibrary:
         lines += ['', '## Maintenance', '',
                   'Retrieval reports source review dates, changes and applicability gaps. Recheck dated requirements before consequential use.',
                   'Original source text is preserved under sources/blobs; authored entries cite exact source passages.', '']
+        if (base / 'capability-roadmap.md').is_file():
+            lines += ['## Capabilities', '',
+                      '[Capability roadmap](capability-roadmap.md) records available tools, planned work and the improvement cycle.', '']
         (base / '_index.md').write_text('\n'.join(lines), encoding='utf8')
         navigation = ['# Profile library', '', 'Each specialist owns its source-backed knowledge and maintenance record.', '']
         for manifest in sorted(self.root.glob('*/manifest.json')):
@@ -127,6 +130,55 @@ class KnowledgeLibrary:
             state = self.state(kit_id)
             state.update(goal=goal, subject=subject)
             self._save(kit_id, state)
+
+    def write_capability_roadmap(self, kit):
+        """Render the current capability records without changing knowledge evidence."""
+        with self.lock:
+            base = self.directory(kit.id)
+            base.mkdir(parents=True, exist_ok=True)
+            capabilities = kit.to_dict()['capabilities']
+            cycle = [
+                'After useful work, identify a missing tool or procedure that would improve this specialist\'s goal.',
+                'Add or revise its capability record with inputs, outputs, access, setup and a verification method. Preserve working capabilities.',
+                'Build or configure the improvement through authorized host tools. Keep consequential access and external actions under host permissions.',
+                'Run the stated check against independent expected evidence. Save actual input, output, comparison, date and artifact locations in the library.',
+                'Record available readiness after that check succeeds. Keep failed or untested work in its appropriate planned state and record the next action.'
+            ]
+            data = {'schema_version': 1, 'kit_id': kit.id, 'kit_version': kit.version,
+                    'goal': kit.goal, 'capabilities': capabilities,
+                    'verification_limit': 'Readiness is a recorded assessment. Calling a capability verified requires an observed test result retained in the library.',
+                    'improvement_cycle': cycle}
+            atomic_json(base / 'capability-roadmap.json', data)
+            lines = ['# Capability roadmap', '', f'Specialist: {kit.subject}', '',
+                     f'Goal: {kit.goal}', '', f'Package version: {kit.version}', '',
+                     'This roadmap is derived from the specialist package capability records. '
+                     'Update those records with adeptory_propose so this roadmap stays current.', '',
+                     data['verification_limit'], '']
+            for title, records in (
+                    ('Available capabilities', [c for c in capabilities if c['readiness'] == 'available']),
+                    ('Work to build or configure', [c for c in capabilities if c['readiness'] != 'available'])):
+                lines.extend(['## ' + title, ''])
+                if not records:
+                    lines.extend(['No capabilities recorded in this group.', ''])
+                for item in records:
+                    lines.extend(['### ' + item['id'], '', 'Recorded readiness: ' + item['readiness'], '',
+                                  item['why'], '', 'Inputs: ' + ', '.join(item['inputs']), '',
+                                  'Outputs: ' + ', '.join(item['outputs']), '',
+                                  'Access: ' + ', '.join(item['access']), '',
+                                  'Verification method: ' + item['verification'], ''])
+                    if item['setup']:
+                        lines.extend(['Setup work:', ''] + ['- ' + step for step in item['setup']] + [''])
+            lines.extend(['## Continuing improvement', ''] +
+                         [f'{number}. {step}' for number, step in enumerate(cycle, 1)] + [''])
+            (base / 'capability-roadmap.md').write_text('\n'.join(lines), encoding='utf8')
+            navigation = base / '_index.md'
+            if navigation.is_file():
+                text = navigation.read_text(encoding='utf8')
+                if '(capability-roadmap.md)' not in text:
+                    navigation.write_text(text + '\n## Capabilities\n\n'
+                                          '[Capability roadmap](capability-roadmap.md) records available tools, '
+                                          'planned work and the improvement cycle.\n', encoding='utf8')
+            return data
 
     def document(self, kit_id, data):
         data = deepcopy(data)
@@ -363,6 +415,8 @@ class KnowledgeLibrary:
         return {'documents': len(state['documents']), 'entries': len(state['entries']),
                 'directory': str(self.directory(kit_id)), 'imports_directory': str(self.root / 'imports'),
                 'navigation': str(self.directory(kit_id) / '_index.md'),
+                'capability_roadmap': str(self.directory(kit_id) / 'capability-roadmap.md')
+                                      if (self.directory(kit_id) / 'capability-roadmap.md').is_file() else None,
                 'source_roles': sorted({d['role'] for d in state['documents'].values()}),
                 'review_due': [d['id'] for d in state['documents'].values()
                                if self.source_state(d)['freshness'] == 'review-due'],

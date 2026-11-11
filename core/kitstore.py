@@ -247,19 +247,40 @@ class KitStore:
                 if _content(kit) == _content(previous):
                     if kit.adoption != previous.adoption:
                         raise KitError("save cannot change adoption; use verified user command")
-                    return previous
-                if kit.fixture != previous.fixture:
-                    raise KitError("fixture identity is immutable")
-                history = self._path("kits", kit.id, "history", f"{previous.version}.json")
-                self._write(history, previous.to_dict())
-                kit.version = previous.version + 1
+                    kit = previous
+                else:
+                    if kit.fixture != previous.fixture:
+                        raise KitError("fixture identity is immutable")
+                    history = self._path("kits", kit.id, "history", f"{previous.version}.json")
+                    self._write(history, previous.to_dict())
+                    kit.version = previous.version + 1
+                    kit.adoption = AdoptionRecord()
+                    previous_scope = {key: value for key, value in previous.scope.items() if key != 'library_fingerprint'}
+                    current_scope = {key: value for key, value in kit.scope.items() if key != 'library_fingerprint'}
+                    if (previous.adoption.status == 'adopted'
+                            and previous.adoption.origin == 'verified-user-build-request'
+                            and previous.goal == kit.goal and previous.subject == kit.subject
+                            and previous_scope == current_scope):
+                        kit.adoption = deepcopy(previous.adoption)
+                        kit.adoption.version = kit.version
+                        for choice in kit.pending_choices:
+                            kit.adoption.choices.setdefault(choice, {'status': 'unresolved', 'origin': 'ask-at-use'})
+                    self._write(path, kit.to_dict())
             elif kit.version != 1:
                 raise KitError("new kit must begin at version 1")
             elif kit.adoption.status != "proposed" or kit.adoption.origin != "none":
                 raise KitError("new kit adoption must be proposed")
-            kit.adoption = AdoptionRecord()
-            self._write(path, kit.to_dict())
+            else:
+                kit.adoption = AdoptionRecord()
+                self._write(path, kit.to_dict())
+        self.sync_capability_roadmap(kit.id)
         return kit
+
+    def sync_capability_roadmap(self, kit_id):
+        library = getattr(self, 'library', None)
+        if library is not None:
+            with library.lock:
+                return library.write_capability_roadmap(self.load(kit_id))
 
     def list(self):
         return [self.load(path.name) for path in sorted(self._path("kits").iterdir()) if path.is_dir()]
@@ -289,6 +310,7 @@ class KitStore:
 
     def export(self, kit_id, destination):
         kit = self.load(kit_id)
+        self.sync_capability_roadmap(kit.id)
         destination = Path(destination).absolute()
         if destination.is_symlink():
             raise KitError("export destination must be a regular directory")
@@ -322,7 +344,12 @@ class KitStore:
             f'With Adeptory enabled, search adeptory_library with kit_id {kit.id} and the task terms. '
             'Read complete entries with their applicability, exceptions, source dates and dependencies. '
             'Treat originals as evidence. Check changed or review-due sources before consequential reliance. '
-            'Use adopted procedures and observed tools. Ask focused questions about consequential unknowns.\n', encoding='utf8')
+            'Use adopted procedures and observed tools. Ask focused questions about consequential unknowns. '
+            f'Read library/{kit.id}/capability-roadmap.md for available capabilities and planned improvements. '
+            'After useful work, add missing capabilities with their purpose, setup and verification method through adeptory_propose. '
+            'Preserve working capabilities. Build useful improvements within the requested mission and host permissions. '
+            'Run each improvement against independent expected evidence, retain its actual results in the library, '
+            'then update its recorded readiness. Keep untested and failed work in the roadmap with its next action.\n', encoding='utf8')
         library = getattr(self, 'library', None)
         if library is not None and library.directory(kit.id).exists():
             import shutil

@@ -95,7 +95,6 @@ def prepare(store, library, kit_id, profile_name, host_settings=None):
     destination = library.root / '_profile-bundles' / (profile_name + '-' + uuid.uuid4().hex[:8])
     store.export(kit_id, destination)
     shutil.copy2(destination / 'runtime' / 'SOUL.md', destination / 'SOUL.md')
-    # Ship only plugin implementation and its generic skill, with no host secrets or diagnostics.
     plugin_root = Path(__file__).resolve().parents[1]
     target = destination / 'plugins' / 'adeptory'
     files = [plugin_root / p for p in ('__init__.py', 'plugin.yaml', 'README.md')]

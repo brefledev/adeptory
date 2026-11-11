@@ -16,7 +16,6 @@ def start_reply(ctx, profile_home, brief, *, session_id, session_key, platform, 
     if send():
         return True, None
     # The SDK gates automatic gateway turns with an operator-owned setting.
-    # A direct local command may ask once; the native choice supplies consent.
     import yaml
     config_path = Path(profile_home) / 'config.yaml'
     config = yaml.safe_load(config_path.read_text(encoding='utf8')) if config_path.is_file() else {}

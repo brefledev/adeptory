@@ -664,6 +664,9 @@ class Runtime:
                 return {'context': 'You are the installed specialist for ' + starter.subject + '. '
                         'Use this profile\'s library/' + starter.id + '/_index.md and adeptory_library search/read '
                         'to answer the current task. Keep source qualifications and applicability attached. '
+                        'Read capability-roadmap.md when work exposes a missing tool or repeated procedure. '
+                        'Build and test useful improvements within the requested mission and host permissions, '
+                        'retain actual verification evidence, and update capability records with adeptory_propose. '
                         'The installed reference is available for ordinary research and interpretation. '
                         'Start a new construction workflow only when the user requests a build or update.'}
             if state.get('guided'):
@@ -679,7 +682,12 @@ class Runtime:
                 guide = ('You are the completed specialist for ' + kit.subject + '. '
                          'Use adeptory_library search/read and the supported workflow for the current task. '
                          'Keep applicability, exceptions, source dates and evidence limits beside your advice. '
-                         'Ask about unresolved facts when this task depends on them. Host permissions govern consequential actions.\n')
+                         'Ask about unresolved facts when this task depends on them. Host permissions govern consequential actions. '
+                         'Read this profile\'s capability-roadmap.md when a task exposes a missing tool or repeated work. '
+                         'Preserve working capabilities and update capability records with adeptory_propose. '
+                         'Build useful improvements within the requested mission and host permissions. '
+                         'Run the stated check against independent expected evidence and retain actual results in the library '
+                         'before updating readiness. Keep failed and untested work with its next action.\n')
             selected = select_context(kit, str(user_message), state["subject"])
             notes = self.notes.relevant(kit.id, state["subject"], str(user_message))
             receipt = selected["receipt"]
@@ -839,12 +847,17 @@ def register(ctx):
                          "why": text, "inputs": strings, "outputs": strings, "access": strings,
                          "setup": strings, "verification": text},
                         ["id", "readiness", "why", "inputs", "outputs", "access", "setup", "verification"])
+    data_mapping = record({"key": text, "meaning": text, "mechanism": text, "decision": text,
+                           "priority": text, "consequence": text, "exceptions": strings,
+                           "evidence": {"type": "array", "items": text,
+                                        "description": "Existing source, claim or workflow IDs supporting this mapping"}},
+                          ["key", "meaning", "mechanism", "decision", "priority", "consequence", "exceptions", "evidence"])
     fields["adeptory_propose"]["data"] = record({
         "id": text, "goal": text, "subject": text, "version": {"type": "integer"},
         "schema_version": {"type": "integer", "enum": [1]}, "fixture": {"type": "boolean"},
         "scope": {"type": "object"}, "sources": {"type": "array", "items": fields["adeptory_source"]["data"]},
         "claims": {"type": "array", "items": claim}, "workflow": {"type": "array", "items": workflow},
-        "capabilities": {"type": "array", "items": capability}, "data_map": {"type": "array", "items": {"type": "object"}},
+        "capabilities": {"type": "array", "items": capability}, "data_map": {"type": "array", "items": data_mapping},
         "pending_choices": strings, "adoption": {"type": "object", "description": "Keep status proposed and origin none; model tools cannot adopt"},
         "rules": {"type": "array", "items": {"type": "object"}}, "gaps": strings}, ["id"])
     descriptions = {

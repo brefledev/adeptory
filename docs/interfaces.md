@@ -13,7 +13,7 @@ Schema version 1 is defined in `core/model.py`. A specialist package uses the `K
 | `ToolCapability` | Readiness, purpose, inputs, outputs, access, setup, and verification. |
 | `AdoptionRecord` | Status, origin, actor, time, package version, and recorded choices. |
 
-Package revisions reopen adoption. Model proposals preserve a proposed state. The completed-build path derives ordinary-use authorization from the original request and its host-provided user identity. Unresolved business choices retain their unknown status until the person supplies the relevant fact.
+The completed-build path derives ordinary-use authorization from the original request and its host-provided user identity. That authorization continues across knowledge, procedure, and capability revisions within the same goal, subject, and scope. A changed mission reopens adoption. Other adoption origins retain their existing version review. Unresolved business choices retain their unknown status until the person supplies the relevant fact.
 
 `Observation` records an expiring lead with its subject, origin, evidence, and keywords. `CheckResult` records the declared rules considered for an operation and whether the host must request approval. Host authorization remains a separate decision.
 
