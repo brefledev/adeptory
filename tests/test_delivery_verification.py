@@ -110,6 +110,13 @@ class InstalledRevisionTests(unittest.TestCase):
                            self.fixture.runtime.library.fingerprint(self.kit_id))
         self.assertEqual(result['kit_id'], self.kit_id)
 
+    def test_generic_plugin_update_keeps_persisted_specialist_identity(self):
+        from adapter_hermes.profile_bundle import refresh
+        (self.home / 'plugins' / 'adeptory' / 'starter-kit.json').unlink()
+        self.assertEqual(installed(self.kit_id, 'synthetic-target', self.kit)['kit_id'], self.kit_id)
+        with patch('adapter_hermes.profile_bundle._reload', return_value={'reloaded': True}):
+            self.assertEqual(refresh(self.kit_id, 'synthetic-target')['status'], 'profile-reloaded')
+
     def test_revised_package_and_changed_library_require_refreshed_distribution(self):
         newer = self.fixture.runtime.store.load(self.kit_id)
         newer.capabilities[0].verification += ' Check the retained output.'

@@ -84,6 +84,11 @@ class Runtime:
                         and self.builder.status(self.starter_id)['ready_for_bundle']):
                     self.store.adopt(self.starter_id, origin='verified-user-build-request',
                                      actor=approved['actor'], choices=approved.get('choices', {}))
+        else:
+            imported = [kit for kit in self.store.list() if not kit.fixture
+                        and kit.scope.get('import_origin', {}).get('kit_id') == kit.id]
+            if len(imported) == 1:
+                self.starter_id = imported[0].id
 
     def mount_fixture(self, kit_id, subject, session_id):
         """Harness-only entry. Caller owns the isolated fixture data directory."""

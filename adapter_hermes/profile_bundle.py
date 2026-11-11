@@ -58,11 +58,14 @@ def refresh(kit_id, profile_name):
     profile_name = valid_id(profile_name)
     home = Path(_profile_home(profile_name)).resolve()
     starter = home / 'plugins' / 'adeptory' / 'starter-kit.json'
-    if not starter.is_file() or not starter.resolve().is_relative_to(home):
-        raise KitError('target profile must contain a generated Adeptory starter')
-    data = json.loads(starter.read_text(encoding='utf8'))
-    if data.get('id') != kit_id or data.get('scope', {}).get('import_origin', {}).get('kit_id') != kit_id:
-        raise KitError('target profile belongs to a different specialist')
+    if starter.is_file():
+        if not starter.resolve().is_relative_to(home):
+            raise KitError('target profile starter must stay inside its profile')
+        data = json.loads(starter.read_text(encoding='utf8'))
+        if data.get('id') != kit_id or data.get('scope', {}).get('import_origin', {}).get('kit_id') != kit_id:
+            raise KitError('target profile belongs to a different specialist')
+    else:
+        installed(kit_id, profile_name)
     answer = _reload(home)
     ready = bool(answer and answer.get('reloaded'))
     return {'profile_name': profile_name, 'kit_id': kit_id, 'profile_home': str(home),
@@ -76,18 +79,21 @@ def installed(kit_id, profile_name, expected=None, fingerprint=None):
     profile_name = valid_id(profile_name)
     home = _profile_home(profile_name)
     starter = home / 'plugins' / 'adeptory' / 'starter-kit.json'
-    if not starter.is_file() or json.loads(starter.read_text(encoding='utf8')).get('id') != kit_id:
+    seed = json.loads(starter.read_text(encoding='utf8')) if starter.is_file() else None
+    if seed is not None and seed.get('id') != kit_id:
         raise KitError('install the generated specialist in its final Hermes profile first')
     active = home / 'plugin-data' / 'adeptory' / 'kits' / kit_id / 'kit.json'
     library = home / 'library' / kit_id / 'manifest.json'
     if not active.is_file() or not library.is_file():
         raise KitError('verify that the installed profile loads its specialist and own library')
     saved = json.loads(active.read_text(encoding='utf8'))
+    if saved.get('scope', {}).get('import_origin', {}).get('kit_id') != kit_id:
+        raise KitError('target profile must contain the generated specialist identity')
     if saved.get('adoption', {}).get('origin') != 'verified-user-build-request':
         raise KitError('the installed profile must load the completed, request-authorized specialist')
     if expected is not None:
-        seed = json.loads(starter.read_text(encoding='utf8'))
-        origin = seed.get('scope', {}).get('import_origin', {})
+        snapshot = seed if seed is not None else saved
+        origin = snapshot.get('scope', {}).get('import_origin', {})
         def content(data):
             data = json.loads(json.dumps(data))
             data.pop('version', None)
@@ -95,8 +101,8 @@ def installed(kit_id, profile_name, expected=None, fingerprint=None):
             data.get('scope', {}).pop('import_origin', None)
             return data
         if (origin.get('version') != expected.version
-                or content(seed) != content(expected.to_dict())
-                or content(saved) != content(seed)):
+                or content(snapshot) != content(expected.to_dict())
+                or content(saved) != content(snapshot)):
             raise KitError('the installed specialist differs from the current package; prepare and install a refreshed distribution')
         if fingerprint is not None:
             try:

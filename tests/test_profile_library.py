@@ -194,6 +194,11 @@ class ProfileLibraryTests(unittest.TestCase):
         restarted.store.save(revised)
         restarted = runtime_class(installed_home / 'plugin-data' / 'adeptory')
         self.assertEqual(restarted.store.load(self.kit).adoption.status, 'proposed')
+        (path / 'plugins' / 'adeptory' / 'starter-kit.json').unlink()
+        upgraded = runtime_class(installed_home / 'plugin-data' / 'adeptory')
+        self.assertEqual(upgraded.starter_id, self.kit)
+        self.assertEqual(upgraded.store.load(self.kit).adoption.status, 'proposed')
+        self.assertEqual(upgraded.library.status(self.kit)['entries'], 3)
 
     def test_bulk_import_resumes_and_reports_a_blocked_item_without_hiding_progress(self):
         incoming = self.runtime.library.root / 'imports'
