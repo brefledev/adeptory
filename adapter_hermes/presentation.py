@@ -15,7 +15,7 @@ WORDMARK = "\n".join((
 
 
 def welcome():
-    return '```text\n' + WORDMARK + '\n```\n\nWelcome to Adeptory.'
+    return '```\n' + WORDMARK + '\n```\n\nWelcome to Adeptory.'
 
 
 def text(value, limit=500):
