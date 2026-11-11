@@ -1,0 +1,21 @@
+{
+  "fixture_status": "source-transfer metadata demonstration; not legal advice",
+  "source": {
+    "id": "us-17-usc-107",
+    "url": "https://uscode.house.gov/us/usc/119-120/t17/s107/",
+    "title": "17 U.S.C. § 107: Limitations on exclusive rights: Fair use",
+    "publisher": "Office of the Law Revision Counsel, U.S. House of Representatives",
+    "jurisdiction": "United States",
+    "retrieved_at": "2026-11-11T04:06:00Z",
+    "as_of": "Text contains laws in effect through Public Law 119-120 (2026-10-07)",
+    "citation": "17 U.S.C. § 107",
+    "supported_metadata_claim": "A record can store jurisdiction, citation, and source compilation date separately.",
+    "limitation": "This transfer check does not interpret the statute or establish Idaho-law coverage."
+  },
+  "jurisdiction_gap": {
+    "jurisdiction": "Idaho",
+    "source_route": "https://legislature.idaho.gov/",
+    "observed_result": "The web retrieval tool returned Blocked by robots.txt for the official legislature host.",
+    "status": "tool-specific access gap; official-source contents and Idaho-law coverage remain unverified"
+  }
+}

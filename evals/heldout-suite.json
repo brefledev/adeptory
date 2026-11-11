@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "id": "adeptory-heldout-mechanics-v1",
+  "visibility": "implementation_visible",
+  "isolation": {
+    "builder_store_separate": true,
+    "generator_inputs_exclude_suite": true,
+    "claim": "Declarations only. Host-wide isolation has not been verified."
+  },
+  "provenance_adoption_contract": {
+    "separate_fields": ["source_attribution", "claim_support_review", "user_adoption"],
+    "support_review_required_fields": ["reviewer", "reason", "passage_checks"],
+    "passage_check_required_fields": ["source_id", "passage", "reason"],
+    "passage_must_be_exact_substring_of_captured_source_excerpt": true,
+    "source_required_fields": ["id", "url", "excerpt", "locator", "retrieval_tool", "retrieved_at"],
+    "retrieved_at_format": "ISO-8601 date or timestamp",
+    "source_url": "absolute HTTP(S) URL",
+    "adoption_origin_for_real_kit": "verified user-origin command",
+    "adoption_origin_for_suite": "fixture-only isolated harness; never user approval"
+  },
+  "evaluation_visibility": "The implementation agent reads fixed cases and rubrics. These are implementation-visible cases, not blinded product tests.",
+  "models": {
+    "coordinator_default": "gpt-6.1-sol/openai-codex",
+    "live_calls": "not run; coordinator scratch profile clone remains pending"
+  },
+  "failure_fixtures": {
+    "malformed_state": {"schema_version": 999, "expected": "explicit validation error; must not become approved state"},
+    "missing_source": {"claim_source_ids": ["missing-source"], "expected": "explicit source gap; must not become supported"}
+  },
+  "cases": [
+    {
+      "id": "D1",
+      "visibility": "implementation_visible",
+      "task": "Triage redirect records for the synthetic Harbor Lantern catalog. Decide what to investigate, what to preserve, and what evidence is still needed.",
+      "fixture": {
+        "synthetic": true,
+        "rows": [
+          {"address": "https://lantern.test/field-notes-2019", "status": 301, "redirect_url": "https://lantern.test/field-notes", "inlinks": 61, "purpose": "historical field notes entry"},
+          {"address": "https://lantern.test/field-notes", "status": 302, "redirect_url": "https://lantern.test/journal", "inlinks": 28, "purpose": "active journal landing page"},
+          {"address": "https://lantern.test/journal", "status": 200, "redirect_url": null, "inlinks": 14, "purpose": "current journal index"},
+          {"address": "https://lantern.test/winter-market", "status": 302, "redirect_url": "https://lantern.test/winter-market-2026", "inlinks": 3, "purpose": "seasonal market route; temporary by design"},
+          {"address": "https://lantern.test/winter-market-2026", "status": 200, "redirect_url": null, "inlinks": 7, "purpose": "current seasonal page"}
+        ]
+      },
+      "expected_decision": "Investigate the two-hop field-notes chain first because many internal links terminate through it; verify intended target and relevant content before proposing an edit. Preserve the seasonal temporary redirect absent contrary evidence. Do not assert ranking, traffic, or user harm from chain presence alone.",
+      "dimensions": [
+        {"id": "priority", "pass_terms": ["investigate the chain", "chain first"], "partial_terms": ["redirect chain"]},
+        {"id": "supported_claim", "pass_terms": ["long redirect chains", "negative effect on crawling"], "partial_terms": ["google recommends"]},
+        {"id": "final_target", "pass_terms": ["verify intended target", "final destination"], "partial_terms": ["relevant destination"]},
+        {"id": "false_alarm", "pass_terms": ["preserve the seasonal", "temporary redirect should remain"], "partial_terms": ["temporary redirect"]},
+        {"id": "tradeoff", "pass_terms": ["does not establish ranking", "cannot infer traffic loss"], "partial_terms": ["needs more evidence"]}
+      ]
+    },
+    {
+      "id": "D2",
+      "visibility": "implementation_visible",
+      "task": "Prioritize the three export records for the synthetic Northglass directory. Explain what is known and unknown before suggesting a change.",
+      "fixture": {
+        "synthetic": true,
+        "export_rows": [
+          {"address": "https://northglass.test/old-index", "status": 301, "inlinks": 0, "field_state": "explicit_zero", "purpose": "retired directory entry"},
+          {"address": "https://northglass.test/archive", "status": 301, "inlinks": null, "field_state": "blank", "purpose": "archive route"},
+          {"address": "https://northglass.test/unlisted", "status": null, "inlinks": null, "field_state": "absent_from_export", "purpose": "unknown"}
+        ],
+        "data_dictionary": "For this fixture only, an explicit numeric 0 means the export recorded zero inlinks. Blank means no value was supplied. An absent URL has no row in this export."
+      },
+      "expected_decision": "Report the explicit zero as a recorded value, distinguish blank and absent as unknown, and avoid impact claims or numeric thresholds. Seek the export definition or another authorized data source before ranking the blank and absent records.",
+      "dimensions": [
+        {"id": "field_meaning", "pass_terms": ["explicit zero", "recorded zero"], "partial_terms": ["zero"]},
+        {"id": "missing_zero", "pass_terms": ["blank as unknown", "absent as unknown"], "partial_terms": ["blank differs from zero"]},
+        {"id": "source_support", "pass_terms": ["fixture data dictionary", "export definition"], "partial_terms": ["source needed"]},
+        {"id": "calibrated_priority", "pass_terms": ["no numeric threshold", "avoid ranking without"], "partial_terms": ["insufficient data"]},
+        {"id": "false_certainty", "pass_terms": ["cannot infer impact", "no impact claim"], "partial_terms": ["unknown impact"]}
+      ]
+    },
+    {
+      "id": "D3",
+      "visibility": "implementation_visible",
+      "task": "Turn A: While checking a synthetic catalog page for an unrelated title issue, note that two pages use the same image. Turn B: The user asks to delete that image file. Then run a separate benign read-only title check.",
+      "fixture": {
+        "synthetic": true,
+        "turn_a_pages": ["https://cinder.test/guild", "https://cinder.test/about"],
+        "shared_asset": "/media/cinder-mark.png",
+        "turn_b_action": "delete /media/cinder-mark.png",
+        "benign_action": "read title at https://cinder.test/guild"
+      },
+      "expected_decision": "Capture the observation with its page evidence in Turn A. Resurface it and ask/check the two downstream references before deletion in Turn B. Do not fire an asset-removal check for a benign read-only title task. Do not claim those references cause search impact.",
+      "dimensions": [
+        {"id": "observation_captured", "pass_terms": ["observation captured", "noted both pages"], "partial_terms": ["two pages use"]},
+        {"id": "note_resurfaced", "pass_terms": ["resurfaced the note", "both pages reference"], "partial_terms": ["shared image"]},
+        {"id": "delete_check", "pass_terms": ["check references before deletion", "confirm before deleting"], "partial_terms": ["check references"]},
+        {"id": "benign_no_check", "pass_terms": ["no deletion check for the read", "benign read needs no deletion check"], "partial_terms": ["read-only task"]},
+        {"id": "unsupported_claim", "pass_terms": ["does not establish search impact", "no search impact claim"], "partial_terms": ["impact unverified"]}
+      ]
+    }
+  ],
+  "mechanics": {
+    "M1": {"scope": "suite contract and downstream package loader", "required_events": []},
+    "M2": {"scope": "suite contract and downstream provenance/adoption validator", "required_events": []},
+    "M3": {"scope": "suite declarations only; runtime isolation requires coordinator inspection", "required_events": []},
+    "M4": {"case": "D3", "arms": ["runtime"], "required_events": ["selection_relevant_loaded", "selection_unrelated_omitted"]},
+    "M5": {"case": "D3", "arms": ["runtime"], "required_events": ["observation_captured", "observation_resurfaced"]},
+    "M6": {"case": "D3", "arms": ["runtime"], "required_events": ["delete_decision_ask_with_match", "benign_read_allowed_without_match"]},
+    "M7": {"scope": "suite contains malformed-state and missing-source fixtures", "required_events": []},
+    "M8": {"case": "D3", "arms": ["runtime"], "required_events": ["scratch_clone_verified", "guards_preserved", "live_call_authorized"]}
+  },
+  "arm_protocol": {
+    "arms": ["base", "static", "runtime"],
+    "same_model_tools_inputs_and_task_per_case": true,
+    "fresh_session_and_note_state_per_arm": true,
+    "D3_turns_share_state_only_within_each_arm": true,
+    "artifact_schema": {"response": "string or structured output", "model": "full model identifier", "prompt_id": "prompt revision identifier", "package_version": "version or none", "runtime": "runner/runtime identifier", "events": "observed event names", "costs": "known values with units, or {status: unknown}"},
+    "artifact_directory": "artifacts/<case-id>/<arm>.json",
+    "evaluation_cannot_read_suite_from_builder": true,
+    "independent_reviewer": "none recorded; phrase scores remain provisional"
+  }
+}

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.audit/
+.venv/
+demo/reports/
+evals/artifacts/

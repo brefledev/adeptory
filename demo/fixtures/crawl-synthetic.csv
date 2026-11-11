@@ -1,0 +1,5 @@
+Address,Status Code,Redirect URL,Inlinks,Page Purpose,Fixture Status
+https://example.test/old-guides,301,https://example.test/archive/guides,37,legacy guide landing page,SYNTHETIC
+https://example.test/archive/guides,301,https://example.test/guides,12,guide index,SYNTHETIC
+https://example.test/seasonal-offer,302,https://example.test/current-offer,4,temporary seasonal promotion,SYNTHETIC
+https://example.test/current-offer,200,,9,current promotion page,SYNTHETIC

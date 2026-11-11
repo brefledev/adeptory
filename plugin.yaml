@@ -1,0 +1,23 @@
+manifest_version: 2
+name: adeptory
+version: 0.1.0
+requires_hermes: '>=0.23.1'
+description: Build specialists with researched libraries, working procedures and verified tools.
+author: Brennan Flentge
+kind: standalone
+provides_tools:
+  - adeptory_build
+  - adeptory_library
+  - adeptory_propose
+  - adeptory_source
+  - adeptory_lookup
+  - adeptory_note
+  - adeptory_check
+provides_hooks:
+  - pre_llm_call
+  - pre_tool_call
+  - post_tool_call
+  - on_session_end
+provides_middleware:
+  - llm_request
+  - tool_request
