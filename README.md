@@ -1,8 +1,42 @@
 # Adeptory
 
-Build a Hermes specialist for the work you need done.
+[![Adeptory. Give intelligence an education. A paper mechanical hand draws a tool in an open reference book.](docs/assets/adeptory-hero.webp)](docs/assets/adeptory-hero-full.webp)
 
-Describe the job and your circumstances. Adeptory researches the relevant authorities and instructional material, builds a searchable library, writes procedures, and configures the tools the specialist needs. It tests representative work before delivering the specialist's own Hermes profile.
+[Download the full-size WebP, 1774 × 887](docs/assets/adeptory-hero-full.webp) · [Artwork and diagram files](docs/assets/README.md)
+
+Give intelligence an education.
+
+Tell Hermes the job you need done. Adeptory researches the profession and builds a specialist with its own searchable library. Its procedures explain why each step exists and which exceptions can change the recommendation.
+
+Adeptory tests the specialist on representative work and delivers its own Hermes profile.
+
+## Give it the why
+
+A grant specialist should be able to explain which rule makes an applicant eligible and which missing evidence could change that answer.
+
+Adeptory keeps those conditions beside the procedure, along with the supporting source passages. You can inspect what the specialist worked from and question how it reached its recommendation.
+
+## A library built for the job
+
+![An indexed reference book with cobalt page tabs, vermilion bookmarks and a magnifying glass over a source passage.](docs/assets/source-library.webp)
+
+Your specialist gets its own `library/` directory. It can search the original sources alongside the procedures built from them.
+
+Each procedure keeps its supporting passages and the conditions under which its advice applies. When a source changes, Adeptory marks the affected entries for review.
+
+Read [Library and source records](docs/source-ledger.md) for the evidence fields and freshness rules.
+
+## Let it build the next tool
+
+![A reference manual unfolds into a paper-and-cobalt wrench above its own technical drawing.](docs/assets/tool-building.webp)
+
+A specialist can encounter a task worth turning into a reusable tool. It records what the tool should do and how to test it, then builds it through the host tools you've authorized.
+
+In a tested grant-operations follow-up, the specialist built a tool for tracking application evidence that passed 22 checks. It saved the tool and its method for later use.
+
+Your original request continues to authorize ordinary work within the same mission. Changes to that mission reopen review.
+
+Read [Tool setup](docs/tool-setup.md) for capability requirements and verification.
 
 ## Install in your Hermes profile
 
@@ -32,6 +66,24 @@ on a fictional packet before delivering its Hermes profile.
 
 You can also describe the job in ordinary conversation and ask Hermes to use Adeptory. Send `/adeptory` for the welcome message.
 
+### What Adeptory does next
+
+[![Six-step build flow. Describe the job, research sources, build the library, prepare procedures and tools, test representative work, then install and verify the specialist's own Hermes profile.](docs/assets/specialist-workflow.webp)](docs/assets/specialist-workflow.webp)
+
+<details>
+<summary>Read the steps</summary>
+
+<ol>
+<li>Describe the job and the circumstances that affect it.</li>
+<li>Research applicable authorities and instructional material.</li>
+<li>Build the source library and supported reference entries.</li>
+<li>Prepare procedures and tools, including their reasons and exceptions.</li>
+<li>Check representative work against an expected result.</li>
+<li>Install the specialist's own Hermes profile and observe an ordinary task.</li>
+</ol>
+
+</details>
+
 On first use, Hermes may ask whether Adeptory can start an AI reply when you submit a specialist request. Choose **Allow automatic replies** to continue from the request you already sent. The reply uses your current model and its normal usage charges.
 
 Adeptory displays the build in Hermes's **Tasks** panel. It researches sources, organizes the library, prepares the specialist's procedures and tools, and checks a representative result. Required questions appear in Hermes's native question controls. Adeptory continues work that can proceed while facts remain unresolved.
@@ -41,12 +93,6 @@ When the build passes its completion checks, Adeptory reports the installed prof
 ## Keep working after an interruption
 
 The original request and construction progress stay in the builder profile. Return to the same conversation and ask Adeptory to continue. Hermes controls Stop and interruption. Adeptory resumes the saved build when you request it.
-
-Each specialist keeps its own `library/` directory. The library contains source captures, authored references, procedures, examples, a navigation index, and a search index. Entries retain their applicability, exceptions, source passages, and review requirements. Search works across acquired sources and authored entries.
-
-The library also keeps a capability roadmap. During later work, the specialist can identify a missing tool or repeated procedure, record its implementation and verification plan, and build an improvement through authorized host tools. It retains the test result before reporting verification. Your original request continues to authorize ordinary work within the same mission. Changes to that mission reopen review.
-
-Read [Library and source records](docs/source-ledger.md) for the evidence fields and freshness rules. Read [Tool setup](docs/tool-setup.md) for capability requirements and verification.
 
 ## Data, permissions, and costs
 

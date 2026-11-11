@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="760" viewBox="0 0 1440 760" role="img" aria-labelledby="title description">
+<title id="title">How Adeptory builds a specialist</title>
+<desc id="description">Six numbered steps. Describe the job, research applicable sources, build the library, prepare procedures and tools, test representative work, then install and verify an ordinary task in the specialist profile.</desc>
+<rect width="1440" height="760" rx="0" fill="#fff3e4"/>
+<text x="64" y="63.94" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="700" fill="#b43c20">THE BUILD</text>
+<text x="64" y="131.36" font-family="Georgia, serif" font-size="48" font-weight="400" fill="#08143d">How Adeptory builds a specialist</text>
+<polyline points="64,169 1376,169" fill="none" stroke="#c8b9a7" stroke-width="1" stroke-linejoin="round"/>
+<text x="64" y="246.60" font-family="Georgia, serif" font-size="30" font-weight="400" fill="#b43c20">01</text>
+<text x="64" y="302.42" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="#08143d">Describe the job</text>
+<text x="64" y="344.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">Goal and circumstances</text>
+<text x="536" y="246.60" font-family="Georgia, serif" font-size="30" font-weight="400" fill="#b43c20">02</text>
+<text x="536" y="302.42" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="#08143d">Research sources</text>
+<text x="536" y="344.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">Applicable authorities</text>
+<text x="536" y="376.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">and instructional material</text>
+<text x="1008" y="246.60" font-family="Georgia, serif" font-size="30" font-weight="400" fill="#b43c20">03</text>
+<text x="1008" y="302.42" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="#08143d">Build the library</text>
+<text x="1008" y="344.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">Captured sources and</text>
+<text x="1008" y="376.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">supported reference entries</text>
+<text x="1008" y="524.60" font-family="Georgia, serif" font-size="30" font-weight="400" fill="#b43c20">04</text>
+<text x="1008" y="580.42" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="#08143d">Prepare the work</text>
+<text x="1008" y="622.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">Procedures and tools,</text>
+<text x="1008" y="654.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">with reasons and exceptions</text>
+<text x="536" y="524.60" font-family="Georgia, serif" font-size="30" font-weight="400" fill="#b43c20">05</text>
+<text x="536" y="580.42" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="#08143d">Test the specialist</text>
+<text x="536" y="622.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">Representative work checked</text>
+<text x="536" y="654.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">against an expected result</text>
+<text x="64" y="524.60" font-family="Georgia, serif" font-size="30" font-weight="400" fill="#b43c20">06</text>
+<text x="64" y="580.42" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="700" fill="#08143d">Install and verify</text>
+<text x="64" y="622.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">Own Hermes profile,</text>
+<text x="64" y="654.68" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="400" fill="#48536b">then an observed task</text>
+<polyline points="432,286 495,286" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="485,279 495,286 485,293" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="904,286 967,286" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="957,279 967,286 957,293" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="1330,393 1330,461" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="1323,451 1330,461 1337,451" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="967,564 904,564" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="914,557 904,564 914,571" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="495,564 432,564" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="442,557 432,564 442,571" fill="none" stroke="#b43c20" stroke-width="3" stroke-linejoin="round"/>
+</svg>
