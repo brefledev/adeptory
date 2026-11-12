@@ -30,7 +30,8 @@ def _reload(home):
     receipts = []
     for action in ('disable', 'enable'):
         command = [executable, '-p', home.name, 'plugins', action, 'adeptory']
-        result = subprocess.run(command, capture_output=True, text=True, encoding='utf8', errors='replace', timeout=120)
+        # Enabling can prepare declared dependencies in a cold host environment.
+        result = subprocess.run(command, capture_output=True, text=True, encoding='utf8', errors='replace', timeout=600)
         receipts.append({'command': command, 'exit_code': result.returncode,
                          'stdout': result.stdout, 'stderr': result.stderr})
         if result.returncode:

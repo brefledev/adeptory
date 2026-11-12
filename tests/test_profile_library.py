@@ -259,6 +259,22 @@ class ProfileLibraryTests(unittest.TestCase):
             self.assertEqual(result['status'], 'reload-pending')
             self.assertEqual(result['host_response']['error'], 'busy')
 
+    def test_generated_profile_refresh_waits_for_cold_dependency_preparation(self):
+        import subprocess
+        from types import SimpleNamespace
+        from adapter_hermes.profile_bundle import _reload
+
+        def cold_host(command, **kwargs):
+            if command[-2] == 'enable' and kwargs['timeout'] < 180:
+                raise subprocess.TimeoutExpired(command, kwargs['timeout'])
+            return SimpleNamespace(returncode=0, stdout='Gateway reloaded plugins', stderr='')
+
+        with patch('adapter_hermes.profile_bundle.shutil.which', return_value='hermes'), \
+             patch('adapter_hermes.profile_bundle.subprocess.run', side_effect=cold_host):
+            result = _reload(Path(self.temp.name) / 'generated-profile')
+        self.assertTrue(result['reloaded'])
+        self.assertEqual([r['command'][-2] for r in result['commands']], ['disable', 'enable'])
+
     def test_generated_profile_refresh_rejects_other_specialist(self):
         from adapter_hermes.profile_bundle import refresh
         home = Path(self.temp.name) / 'another-profile'
