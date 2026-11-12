@@ -7,12 +7,6 @@ import re
 # https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools#forcing-tool-use
 _AUTO_TOOL_MODELS = re.compile(
     r'\bclaude-(?:(?:fable|mythos)-5-[12]|(?:opus|sonnet)-5-5)(?:[^0-9]|$)')
-_CONTINUE_BUILD = (
-    'Continue the active Adeptory specialist build with the next useful tool call. '
-    'Use adeptory_build progress to recover the next construction task when needed. '
-    'Complete the supported library, working procedures, demonstration and requested profile, '
-    'then call adeptory_build finish. Follow host permissions and ask a genuine blocking '
-    'question through the prepared native controls when independent work is exhausted.')
 
 
 def _auto_tool_choice(request, mode):
@@ -25,26 +19,6 @@ def _auto_tool_choice(request, mode):
         thinking = extra.get('thinking')
     return (mode in {'anthropic_messages', 'bedrock_converse'} or 'claude-' in model) and (
         isinstance(thinking, dict) and thinking.get('type') == 'enabled')
-
-
-def _prompt_tool_use(request, mode):
-    messages = request.get('messages')
-    if not isinstance(messages, list):
-        return
-    block = {'text': _CONTINUE_BUILD}
-    if mode != 'bedrock_converse':
-        block['type'] = 'text'
-    if messages and messages[-1].get('role') == 'user':
-        content = messages[-1].get('content')
-        if isinstance(content, str):
-            if _CONTINUE_BUILD not in content:
-                messages[-1]['content'] = content + '\n\n' + _CONTINUE_BUILD
-            return
-        if isinstance(content, list):
-            if not any(isinstance(item, dict) and item.get('text') == _CONTINUE_BUILD for item in content):
-                content.append(block)
-            return
-    messages.append({'role': 'user', 'content': [block]})
 
 
 def task_items(progress):
@@ -65,7 +39,7 @@ def task_items(progress):
 
 
 def force_tool_use(request, provider='', api_mode=''):
-    """Select supported tool use and prompt continuation where forced calls are unavailable."""
+    """Select supported tool use while preserving conversation messages for prompt caching."""
     rewritten = deepcopy(request)
     mode = api_mode or ('anthropic_messages' if provider == 'anthropic' else
                         'bedrock_converse' if provider == 'bedrock' else '')
@@ -74,16 +48,12 @@ def force_tool_use(request, provider='', api_mode=''):
         if isinstance(config, dict) and isinstance(config.get('tools'), list) and config['tools']:
             auto = _auto_tool_choice(rewritten, mode)
             config['toolChoice'] = {'auto' if auto else 'any': {}}
-            if auto:
-                _prompt_tool_use(rewritten, mode)
     elif mode in {'', 'chat_completions', 'codex_responses', 'anthropic_messages'}:
         tools = rewritten.get('tools')
         if isinstance(tools, list) and tools:
             auto = _auto_tool_choice(rewritten, mode)
             choice = 'auto' if auto else 'any' if mode == 'anthropic_messages' else 'required'
             rewritten['tool_choice'] = {'type': choice} if mode == 'anthropic_messages' else choice
-            if auto:
-                _prompt_tool_use(rewritten, mode)
     return rewritten
 
 

@@ -19,7 +19,7 @@ class ModelToolChoiceTests(unittest.TestCase):
             request['thinking'] = thinking
         return request
 
-    def test_restricted_models_use_auto_with_a_build_instruction(self):
+    def test_restricted_models_use_auto_and_preserve_messages(self):
         for model in ['claude-opus-5-5', 'claude-sonnet-5-5',
                       'claude-fable-5-1', 'claude-fable-5-2',
                       'claude-mythos-5-1', 'claude-mythos-5-2']:
@@ -29,7 +29,7 @@ class ModelToolChoiceTests(unittest.TestCase):
                     original = deepcopy(request)
                     updated = force_tool_use(request, api_mode='anthropic_messages')
                     self.assertEqual(updated['tool_choice'], {'type': 'auto'})
-                    self.assertIn('adeptory_build finish', updated['messages'][-1]['content'])
+                    self.assertEqual(updated['messages'], request['messages'])
                     self.assertEqual(updated['tools'], request['tools'])
                     self.assertEqual(updated['system'], request['system'])
                     self.assertEqual(request, original)
@@ -67,31 +67,28 @@ class ModelToolChoiceTests(unittest.TestCase):
         request['messages'] = [{'role': 'user', 'content': [result]}]
         updated = force_tool_use(request, provider='anthropic')
         self.assertEqual(updated['messages'][0]['content'][0], result)
-        self.assertEqual(updated['messages'][0]['content'][1]['type'], 'text')
-        self.assertIn('next useful tool call', updated['messages'][0]['content'][1]['text'])
+        self.assertEqual(updated['messages'], request['messages'])
         self.assertEqual(force_tool_use(updated, provider='anthropic'), updated)
         self.assertEqual(request['messages'][0]['content'], [result])
 
-    def test_assistant_last_receives_a_user_instruction(self):
+    def test_assistant_last_preserves_the_conversation(self):
         request = self.request('claude-opus-5-5')
         request['messages'] = [{'role': 'assistant', 'content': 'Sources acquired.'}]
         updated = force_tool_use(request, api_mode='anthropic_messages')
-        self.assertEqual(updated['messages'][0], request['messages'][0])
-        self.assertEqual(updated['messages'][-1]['role'], 'user')
-        self.assertEqual(updated['messages'][-1]['content'][0]['type'], 'text')
+        self.assertEqual(updated['messages'], request['messages'])
 
     def test_claude_chat_completions_uses_compatible_auto(self):
         request = self.request('anthropic/claude-sonnet-5.5')
         updated = force_tool_use(request, api_mode='chat_completions')
         self.assertEqual(updated['tool_choice'], 'auto')
-        self.assertIn('next useful tool call', updated['messages'][-1]['content'])
+        self.assertEqual(updated['messages'], request['messages'])
         manual = self.request('claude-sonnet-4-5-20250929')
         manual['extra_body'] = {'thinking': {'type': 'enabled', 'budget_tokens': 2048}}
         updated = force_tool_use(manual, api_mode='chat_completions')
         self.assertEqual(updated['tool_choice'], 'auto')
         self.assertEqual(updated['extra_body'], manual['extra_body'])
 
-    def test_bedrock_model_and_thinking_use_native_auto_and_text_blocks(self):
+    def test_bedrock_model_and_thinking_use_native_auto_and_preserve_messages(self):
         for model, thinking in [('us.anthropic.claude-sonnet-5-5-v1:0', None),
                                 ('anthropic.claude-sonnet-4-5-v1:0',
                                  {'type': 'enabled', 'budget_tokens': 2048})]:
@@ -106,8 +103,7 @@ class ModelToolChoiceTests(unittest.TestCase):
                 updated = force_tool_use(request, api_mode='bedrock_converse')
                 self.assertEqual(updated['toolConfig']['toolChoice'], {'auto': {}})
                 self.assertEqual(updated['messages'][0]['content'][0], request['messages'][0]['content'][0])
-                self.assertIn('next useful tool call', updated['messages'][0]['content'][1]['text'])
-                self.assertNotIn('type', updated['messages'][0]['content'][1])
+                self.assertEqual(updated['messages'], request['messages'])
                 self.assertEqual(request, original)
                 self.assertEqual(force_tool_use(updated, api_mode='bedrock_converse'), updated)
 
@@ -123,6 +119,22 @@ class ModelToolChoiceTests(unittest.TestCase):
         updated = force_tool_use(request, api_mode='chat_completions')
         self.assertEqual(updated['tool_choice'], 'required')
         self.assertEqual(updated['messages'], request['messages'])
+
+    def test_successive_requests_keep_the_same_conversation_prefix(self):
+        for mode, model in [('anthropic_messages', 'claude-opus-5-5'),
+                            ('chat_completions', 'anthropic/claude-sonnet-5.5'),
+                            ('codex_responses', 'gpt-example')]:
+            with self.subTest(mode=mode):
+                first = self.request(model)
+                second = deepcopy(first)
+                second['messages'].extend([
+                    {'role': 'assistant', 'content': 'Reading sources.'},
+                    {'role': 'user', 'content': 'Sources captured.'}])
+                a = force_tool_use(first, api_mode=mode)
+                b = force_tool_use(second, api_mode=mode)
+                self.assertEqual(a['messages'], first['messages'])
+                self.assertEqual(b['messages'][:len(a['messages'])], a['messages'])
+                self.assertEqual(b['messages'], second['messages'])
 
 
 if __name__ == '__main__':
