@@ -40,18 +40,17 @@ Read [Tool setup](docs/tool-setup.md) for capability requirements and verificati
 
 ## Install in your Hermes profile
 
-Adeptory requires Hermes 0.23.1 or later and a configured model. Use the Hermes profile where you normally work.
+Adeptory is available in the Hermes plugin catalog for Windows. It requires Hermes 0.23.1 or later and a configured model. Use the Hermes profile where you normally work.
 
-In Hermes Desktop, open **Capabilities > Plugins** and install from this repository's Git source. Review the permissions and enable Adeptory. Follow any reload instruction Hermes displays.
+In Hermes Desktop, open **Capabilities > Plugins**, find Adeptory in the catalog, review its permissions and enable it. Follow any reload instruction Hermes displays.
 
-In PowerShell, install the same source with the Hermes CLI.
+In PowerShell, install and enable the catalog entry with the Hermes CLI.
 
 ```powershell
-hermes plugins install https://github.com/brefledev/adeptory `
-	--enable
+hermes plugins install adeptory --enable
 ```
 
-After the Hermes catalog accepts Adeptory, you can also install it by name through the catalog.
+The catalog installs the exact revision reviewed by the Hermes maintainers. When they accept a later version, Hermes can offer that update. Read the [catalog update policy](https://hermes-agent.nousresearch.com/docs/developer-guide/plugins/catalog-submission#updating-your-entry) for the release process.
 
 ## Build your first specialist
 
